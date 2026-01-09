@@ -6,6 +6,9 @@ import software.ulpgc.kata6.architecture.model.Movie;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -18,24 +21,18 @@ public class DatabaseStore implements Store {
 
     @Override
     public Stream<Movie> movies() {
-        try {
-            return moviesIn(query());
+        List<Movie> movies = new ArrayList<>();
+        try (Statement statement = connection.createStatement()) {
+            ResultSet query = statement.executeQuery("SELECT * FROM movies");
+            while (query.next()) {
+                movies.add(readFrom(query));
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        return movies.stream();
     }
 
-    private Stream<Movie> moviesIn(ResultSet query) {
-        return Stream.generate(()->movieIn(query)).takeWhile(Objects::nonNull);
-    }
-
-    private Movie movieIn(ResultSet rs) {
-        try {
-            return rs.next() ? readFrom(rs) : null;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private Movie readFrom(ResultSet rs) throws SQLException {
         return new Movie(
@@ -45,7 +42,4 @@ public class DatabaseStore implements Store {
         );
     }
 
-    private ResultSet query() throws SQLException {
-        return connection.createStatement().executeQuery("SELECT * FROM movies");
-    }
 }
