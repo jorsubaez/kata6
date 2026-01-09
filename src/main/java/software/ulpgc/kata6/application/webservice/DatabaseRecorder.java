@@ -49,7 +49,7 @@ public class DatabaseRecorder implements Recorder {
         statement.addBatch();
     }
 
-    private boolean delete(String title) {
+    public boolean delete(String title) {
         try (PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM movies WHERE title = ?")) {
             deleteStatement.setString(1, title);
             int deleted = deleteStatement.executeUpdate();
