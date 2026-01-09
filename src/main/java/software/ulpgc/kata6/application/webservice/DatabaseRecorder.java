@@ -26,30 +26,21 @@ public class DatabaseRecorder implements Recorder {
     public void record(Stream<Movie> movies) {
         try {
             movies.forEach(this::record);
-            flush();
+            statement.executeBatch();
             connection.commit();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private int count = 0;
     private void record(Movie movie) {
         try {
             write(movie);
-            flushIfNeeded();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void flushIfNeeded() throws SQLException {
-        if (mustFlush()) flush();
-    }
-
-    private boolean mustFlush() {
-        return ++count % 10000 == 0;
-    }
 
     private void write(Movie movie) throws SQLException {
         statement.setString(1, movie.title());
@@ -58,7 +49,14 @@ public class DatabaseRecorder implements Recorder {
         statement.addBatch();
     }
 
-    private void flush() throws SQLException {
-        statement.executeBatch();
+    private boolean delete(String title) {
+        try (PreparedStatement deleteStatement = connection.prepareStatement("DELETE FROM movies WHERE title = ?")) {
+            deleteStatement.setString(1, title);
+            int deleted = deleteStatement.executeUpdate();
+            return deleted == 1;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
+
 }
